@@ -4,7 +4,7 @@ from flask import Flask, request, flash, redirect, url_for, render_template
 from werkzeug.utils import secure_filename
 import os
 
-UPLOAD_FOLDER       =   f'{os.path.abspath("static/images")}\\'
+UPLOAD_FOLDER       =   f'{os.path.dirname(os.path.realpath(__file__))}/static/images/'
 ALLOWED_EXTENSIONS  =   set(['png', 'jpg', 'jpeg', 'gif', 'bmp'])
 
 app = Flask(__name__)
@@ -35,8 +35,8 @@ def index(filename = None):
             if nframes > 0:
                 for i in range(0,nframes):
                     image.seek(i)
-                    image.save(f'static/images/frame{i}{filename}')
-            return redirect(url_for('info', image = imagepath.split('\\')[-1],))
+                    image.save(f'{UPLOAD_FOLDER}frame{i}{filename}')
+            return redirect(url_for('info', image = imagepath.split('/')[-1],))
     return render_template("upload.html")
 
 @app.route('/index/info', methods = ['POST','GET'])
@@ -72,39 +72,40 @@ def switch():
             return redirect(request.url)
         NewImage = Image.new(image.mode, image.size, color='white')
         case = request.form['method']
+        # Nice code
         if case == 'Negative':
             ResultImage = STEG.Negative(image,NewImage)
-            ResultImage.save(f'static/images/{case}{path}')
+            ResultImage.save(f'{UPLOAD_FOLDER}{case}{path}')
             RenderImage = f'/../static/images/{case}{path}'
         elif case == 'OnlyRed':
             ResultImage = STEG.OnlyRed(image,NewImage)
-            ResultImage.save(f'static/images/{case}{path}')
+            ResultImage.save(f'{UPLOAD_FOLDER}{case}{path}')
             RenderImage = f'/../static/images/{case}{path}'
         elif case == 'OnlyGreen':
             ResultImage = STEG.OnlyGreen(image,NewImage)
-            ResultImage.save(f'static/images/{case}{path}')
+            ResultImage.save(f'{UPLOAD_FOLDER}{case}{path}')
             RenderImage = f'/../static/images/{case}{path}'
         elif case == 'OnlyBlue':
             ResultImage = STEG.OnlyBlue(image,NewImage)
-            ResultImage.save(f'static/images/{case}{path}')
+            ResultImage.save(f'{UPLOAD_FOLDER}{case}{path}')
             RenderImage = f'/../static/images/{case}{path}'
         else:
             bit = int(request.form['bit'])
             if case == 'RedBitPlane':
                 ResultImage = STEG.RedBitPlane(image,NewImage,bit)
-                ResultImage.save(f'static/images/{case}{bit}{path}')
+                ResultImage.save(f'{UPLOAD_FOLDER}{case}{bit}{path}')
                 RenderImage = f'/../static/images/{case}{bit}{path}'
             elif case == 'GreenBitPlane':
                 ResultImage = STEG.GreenBitPlane(image,NewImage,bit)
-                ResultImage.save(f'static/images/{case}{bit}{path}')
+                ResultImage.save(f'{UPLOAD_FOLDER}{case}{bit}{path}')
                 RenderImage = f'/../static/images/{case}{bit}{path}'
             elif case == 'BlueBitPlane':
                 ResultImage = STEG.BlueBitPlane(image,NewImage,bit)
-                ResultImage.save(f'static/images/{case}{bit}{path}')
+                ResultImage.save(f'{UPLOAD_FOLDER}{case}{bit}{path}')
                 RenderImage = f'/../static/images/{case}{bit}{path}'
             elif case == 'AlphaBitPlane':
                 ResultImage = STEG.AlphaBitPlane(image,NewImage,bit)
-                ResultImage.save(f'static/images/{case}{bit}{path}')
+                ResultImage.save(f'{UPLOAD_FOLDER}{case}{bit}{path}')
                 RenderImage = f'/../static/images/{case}{bit}{path}'
             elif case == 'SignificantBit':
                 color = request.form['color']
