@@ -1,4 +1,5 @@
 from PIL import Image, ImageOps, ExifTags
+import re
 
 def Convert(image):
     if image.mode != 'RGB':
@@ -38,30 +39,51 @@ def OnlyRed(image,result_image):
     x, y = image.size
     for i in range(x):
         for j in range(y):
-            r, g, b = image.getpixel((i,j))
-            g = 0
-            b = 0
-            result_image.putpixel((i,j),(r,g,b))
+            if image.mode == 'RGBA':
+                r, g, b, a = image.getpixel((i,j))
+                g = 0
+                b = 0
+                a = a
+                result_image.putpixel((i,j),(r,g,b,a))
+            else:
+                r, g, b = image.getpixel((i,j))
+                g = 0
+                b = 0
+                result_image.putpixel((i,j),(r,g,b))
     return result_image
 
 def OnlyGreen(image,result_image):
     x, y = image.size
     for i in range(x):
         for j in range(y):
-            r, g, b = image.getpixel((i,j))
-            r = 0
-            b = 0
-            result_image.putpixel((i,j),(r,g,b))
+            if image.mode == 'RGBA':
+                r, g, b, a = image.getpixel((i,j))
+                r = 0
+                b = 0
+                a = a
+                result_image.putpixel((i,j),(r,g,b,a))
+            else:
+                r, g, b = image.getpixel((i,j))
+                r = 0
+                b = 0
+                result_image.putpixel((i,j),(r,g,b))
     return result_image
 
 def OnlyBlue(image,result_image):
     x, y = image.size
     for i in range(x):
         for j in range(y):
-            r, g, b = image.getpixel((i,j))
-            r = 0
-            g = 0
-            result_image.putpixel((i,j),(r,g,b))
+            if image.mode == 'RGBA':
+                r, g, b, a = image.getpixel((i,j))
+                g = 0
+                r = 0
+                a = a
+                result_image.putpixel((i,j),(r,g,b,a))
+            else:
+                r, g, b = image.getpixel((i,j))
+                g = 0
+                r = 0
+                result_image.putpixel((i,j),(r,g,b))
     return result_image
 
 def RedBitPlane(image ,result_image , plane = 0):
@@ -69,7 +91,7 @@ def RedBitPlane(image ,result_image , plane = 0):
     for i in range(x):
         for j in range(y):
             color = image.getpixel((i,j))[0]
-            color = int(format(color, '08b')[7-plane]) * 255
+            color = int(format(color, '08b')[plane]) * 255
             result_image.putpixel((i,j),(color,color,color))
     return result_image
 
@@ -78,7 +100,7 @@ def GreenBitPlane(image ,result_image , plane = 0):
     for i in range(x):
         for j in range(y):
             color = image.getpixel((i,j))[1]
-            color = int(format(color, '08b')[7-plane]) * 255
+            color = int(format(color, '08b')[plane]) * 255
             result_image.putpixel((i,j),(color,color,color))
     return result_image
 
@@ -87,17 +109,19 @@ def BlueBitPlane(image ,result_image , plane = 0):
     for i in range(x):
         for j in range(y):
             color = image.getpixel((i,j))[2]
-            color = int(format(color, '08b')[7-plane]) * 255
+            color = int(format(color, '08b')[plane]) * 255
             result_image.putpixel((i,j),(color,color,color))
     return result_image
 
 def AlphaBitPlane(image, result_image, plane = 0):
-    x, y = image.size
-    for i in range(x):
-        for j in range(y):
-            color = image.getpixel((i,j))[3]
-            color = int(format(color, '08b')[7-plane]) * 255
-            result_image.putpixel((i,j),(color,color,color))
+    if image.mode == 'RGBA':
+        x, y = image.size
+        for i in range(x):
+            for j in range(y):
+                color = image.getpixel((i,j))[3]
+                color = int(format(color, '08b')[plane]) * 255
+                result_image.putpixel((i,j),(color,color,color))
+    return result_image
 
 def StereogramSolver(image, result_image, shift = 0):
     x, y = image.size
@@ -115,10 +139,23 @@ def StereogramSolver(image, result_image, shift = 0):
 def SignificantBit(image, color_order = 'RGB', row_order = True, startpoint = 0, bit = 0):
     color_order = color_order.upper()
     x, y = image.size
-    r ,g ,b = 0, 1, 2
-    bit = 7 - int(bit) + 2
-    message = ''
+    x, y = range(x), range(y)
+    r,g,b = 0,1,2
 
+    try:
+        bit = int(bit)
+    except:
+        bit = 0
+    if bit > 7 or bit < 0:
+        bit = 0
+
+    if startpoint == 1:
+        x = reversed(x)
+    elif startpoint == 2:
+        y = reversed(y)
+    elif startpoint == 3:
+        x, y = reversed(x), reversed(y)
+    
     color_orders = {
         'RGB': [r ,g ,b],
         'RBG': [r ,b ,g],
@@ -128,37 +165,51 @@ def SignificantBit(image, color_order = 'RGB', row_order = True, startpoint = 0,
         'GBR': [g ,b ,r]
     }
 
-    x = range(x)
-    y = range(y)
-    if startpoint == '1':
-        x = reversed(x)
-    elif startpoint == '2':
-        y = reversed(y)
-    elif startpoint == '3':
-        x = reversed(x)
-        y = reversed(y)
-
     order = color_orders[color_order]
     message = ''
-
     if row_order == 'True':
-        for i in x:
-            for j in y:
-                colors = image.getpixel((i,j))
-                f = format(colors[order[0]], '#010b')[bit]
-                s = format(colors[order[1]], '#010b')[bit]
-                t = format(colors[order[2]], '#010b')[bit]
-                message = message+f+s+t
-    else:
         for i in y:
             for j in x:
                 colors = image.getpixel((j,i))
-                f = format(colors[order[0]], '#010b')[bit]
-                s = format(colors[order[1]], '#010b')[bit]
-                t = format(colors[order[2]], '#010b')[bit]
+                f = format(colors[order[0]], '#010b')[2:][bit]
+                s = format(colors[order[1]], '#010b')[2:][bit]
+                t = format(colors[order[2]], '#010b')[2:][bit]
                 message = message+f+s+t
-
+    else:
+        for i in x:
+            for j in y:
+                colors = image.getpixel((i,j))
+                f = format(colors[order[0]], '#010b')[2:][bit]
+                s = format(colors[order[1]], '#010b')[2:][bit]
+                t = format(colors[order[2]], '#010b')[2:][bit]
+                message = message+f+s+t
     return message
+
+def OddEvenAnalyze(image, result_image, o=255, e=0):
+    x, y = image.size
+    for i in range(x):
+        for j in range(y):
+            try:
+                r, g, b = image.getpixel((i,j))
+            except ValueError:
+                r, g, b, a = image.getpixel((i,j))
+            if r % 2 == 0:  r = o
+            else: r = e
+            if g % 2 == 0:  g = o
+            else: g = e
+            if b % 2 == 0:  b = o
+            else: b = e
+            result_image.putpixel((i,j),(r,g,b))
+    return result_image
+
+def Strings(fileee):
+    result = ''
+    for _ in fileee:
+        _ = chr(int(_))
+        if _.isascii():
+            result += f'{_}'
+    result = re.sub(r"\s+", "", result)
+    return result
 
 def Messages():
     print('Какую операцию хотите провести?\n')

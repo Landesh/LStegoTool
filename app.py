@@ -1,7 +1,7 @@
-import main as STEG
 from PIL import Image, GifImagePlugin
 from flask import Flask, request, flash, redirect, url_for, render_template
 from werkzeug.utils import secure_filename
+import main as STEG
 import os
 
 UPLOAD_FOLDER       =   f'{os.path.dirname(os.path.realpath(__file__))}/static/images/'
@@ -9,6 +9,18 @@ ALLOWED_EXTENSIONS  =   set(['png', 'jpg', 'jpeg', 'gif', 'bmp'])
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+Operators = ["Negative","OnlyRed","OnlyGreen","OnlyBlue","OddEvenFilter"]
+BitOpperators = ["RedBitPlane","GreenBitPlane","BlueBitPlane", "AlphaBitPlane"]
+Opperations={"Negative" : STEG.Negative,
+             "OnlyRed" : STEG.OnlyRed,
+             "OnlyGreen" : STEG.OnlyGreen,
+             "OnlyBlue" : STEG.OnlyBlue,
+             "OddEvenFilter" : STEG.OddEvenAnalyze}
+BitOpperations={"RedBitPlane":STEG.RedBitPlane,
+                "GreenBitPlane":STEG.GreenBitPlane,
+                "BlueBitPlane":STEG.BlueBitPlane,
+                "AlphaBitPlane":STEG.AlphaBitPlane}
 
 def log(arg = None):
     print(f'🚀🚀🚀\n{arg}\n🚀🚀🚀')
@@ -35,91 +47,88 @@ def index(filename = None):
             if nframes > 0:
                 for i in range(0,nframes):
                     image.seek(i)
-                    image.save(f'{UPLOAD_FOLDER}frame{i}{filename}')
-            return redirect(url_for('info', image = imagepath.split('/')[-1],))
+                    image.save(f'{UPLOAD_FOLDER}F{i}{filename}')
+            return redirect(url_for('info',image=imagepath.split('/')[-1]))
     return render_template("upload.html")
 
 @app.route('/index/info', methods = ['POST','GET'])
 def info(i = 0):
     path = request.args['image']
-    image = Image.open(f'{UPLOAD_FOLDER}{path}')
-    nframes = STEG.GetNFrames(image)
-    ExifList = STEG.GetExif(image)
-    if request.method == 'POST':
-        if 'FRAME' not in request.form:
-            return redirect(request.url)
-        i = request.form['FRAME']
-        if i == '':
-            return redirect(request.url)
-        if int(i) > nframes-1 or int(i) < 0: i = '0'
-        try:
-            if request.form['switch'] == 'continue':
-                frameimage = f'frame{i}{path}'
-                return redirect(url_for('switch', image = frameimage))
-        except:
-            log(request.form)
-    frameimage = f'frame{i}{path}'
-    return render_template("info.html", img = f'/../static/images/{frameimage}', Exif = ExifList, Frames = nframes-1, Frame = i, path=path)
 
-@app.route('/index/check', methods = ['POST','GET'])
+    with open(f'{UPLOAD_FOLDER}{path}','rb') as image:
+        Strings = STEG.Strings(image.read())
+
+    with Image.open(f'{UPLOAD_FOLDER}{path}') as image:
+        Frames = STEG.GetNFrames(image)
+        Exif = STEG.GetExif(image)
+        image = STEG.Convert(image)
+
+        if request.method == 'POST':
+            if 'FRAME' not in request.form:
+                return redirect(request.url)
+            i = request.form['FRAME']
+            if i == '':
+                return redirect(request.url)
+            if int(i) > Frames-1 or int(i) < 0: i = '0'
+            if request.form['switch'] == 'continue':
+                frameimage = f'F{i}{path}'
+                image.seek(int(i))
+
+                for _ in Operators:
+                    if not os.path.exists(f'{UPLOAD_FOLDER}{_}F{i}{path}'):
+                        chosen_operation_function = Opperations.get(_)
+                        NewImage = Image.new(image.mode, image.size)
+                        NewImage = chosen_operation_function(image, NewImage)
+                        NewImage.save(f'{UPLOAD_FOLDER}{_}F{i}{path}')
+
+                for _ in BitOpperators:
+                    chosen_operation_function = BitOpperations.get(_)
+                    for bit in range(8):
+                        if not os.path.exists(f'{UPLOAD_FOLDER}{bit}{_}F{i}{path}'):
+                            NewImage = Image.new(image.mode, image.size)
+                            NewImage = chosen_operation_function(image, NewImage, bit)
+                            NewImage.save(f'{UPLOAD_FOLDER}{bit}{_}F{i}{path}')
+
+                return redirect(url_for('switch', image = frameimage))
+        frameimage = f'F{i}{path}'
+    return render_template("info.html",img=frameimage,Exif=Exif,Frames=Frames-1,Frame=i,path=path,Strings=Strings)
+
+@app.route('/index/switch', methods = ['POST','GET'])
 def switch():
     path = request.args['image']
-    RenderImage = f'/../static/images/{path}'
+    RenderImage = f'{path}'
     if request.method == 'POST':
         image = Image.open(f'{UPLOAD_FOLDER}{path}')
         image = STEG.Convert(image)
-        if 'method' not in request.form:
-            return redirect(request.url)
         NewImage = Image.new(image.mode, image.size, color='white')
-        case = request.form['method']
-        # Nice code
-        if case == 'Negative':
-            ResultImage = STEG.Negative(image,NewImage)
-            ResultImage.save(f'{UPLOAD_FOLDER}{case}{path}')
-            RenderImage = f'/../static/images/{case}{path}'
-        elif case == 'OnlyRed':
-            ResultImage = STEG.OnlyRed(image,NewImage)
-            ResultImage.save(f'{UPLOAD_FOLDER}{case}{path}')
-            RenderImage = f'/../static/images/{case}{path}'
-        elif case == 'OnlyGreen':
-            ResultImage = STEG.OnlyGreen(image,NewImage)
-            ResultImage.save(f'{UPLOAD_FOLDER}{case}{path}')
-            RenderImage = f'/../static/images/{case}{path}'
-        elif case == 'OnlyBlue':
-            ResultImage = STEG.OnlyBlue(image,NewImage)
-            ResultImage.save(f'{UPLOAD_FOLDER}{case}{path}')
-            RenderImage = f'/../static/images/{case}{path}'
-        else:
-            bit = int(request.form['bit'])
-            if case == 'RedBitPlane':
-                ResultImage = STEG.RedBitPlane(image,NewImage,bit)
-                ResultImage.save(f'{UPLOAD_FOLDER}{case}{bit}{path}')
-                RenderImage = f'/../static/images/{case}{bit}{path}'
-            elif case == 'GreenBitPlane':
-                ResultImage = STEG.GreenBitPlane(image,NewImage,bit)
-                ResultImage.save(f'{UPLOAD_FOLDER}{case}{bit}{path}')
-                RenderImage = f'/../static/images/{case}{bit}{path}'
-            elif case == 'BlueBitPlane':
-                ResultImage = STEG.BlueBitPlane(image,NewImage,bit)
-                ResultImage.save(f'{UPLOAD_FOLDER}{case}{bit}{path}')
-                RenderImage = f'/../static/images/{case}{bit}{path}'
-            elif case == 'AlphaBitPlane':
-                ResultImage = STEG.AlphaBitPlane(image,NewImage,bit)
-                ResultImage.save(f'{UPLOAD_FOLDER}{case}{bit}{path}')
-                RenderImage = f'/../static/images/{case}{bit}{path}'
-            elif case == 'SignificantBit':
-                color = request.form['color']
-                startpoint = request.form['startpoint']
-                row_order = request.form['row_order']
-                f = open("static/result.txt", "w")
-                log('SignificantBit')
-                message = STEG.SignificantBit(image,color,row_order,startpoint,bit)
-                f.write(message)
-                log('END')
-                f.close()
-    return render_template("switch.html", img = RenderImage)
 
-if __name__ == '__main__': ## https://redirect.is/hztkea9
+        color = request.form['color']
+        startpoint = request.form['startpoint']
+        row_order = request.form['row_order']
+        bit = request.form['bit']
+
+        message = STEG.SignificantBit(image,color,row_order,startpoint,bit)
+        with open(f"{UPLOAD_FOLDER}{color}{startpoint}{row_order}{path.split('.')[0]}.txt", "w") as f:
+            f.write(message)
+            text = f'{color}{startpoint}{row_order}{path}'
+        return redirect(url_for('result', text = text))
+    return render_template("switch.html",img=RenderImage,filters=Operators,bitfilters=BitOpperators)
+
+@app.route('/index/result', methods = ['GET'])
+def result():
+    text = request.args['text']
+    path = f"{UPLOAD_FOLDER}{text.split('.')[0]}.txt"
+    with open(path, "r") as f:
+        Text, Binary, Hex, Unicode =  f.read(), '', '', ''
+        for _ in range(0,(8*(len(Text)//8)),8):
+            Group = int(f'{Text[_:_+8]}',2)
+            if Group != 0:
+                Hex += format(Group,"#02x")[2:].upper() +  ' '
+                Unicode += chr(int(f'{Text[_:_+8]}',2))
+                Binary += f'{Text[_:_+8]}' + ' '
+    return render_template("result.html",Hex=Hex,Binary=Binary,Unicode=Unicode,Path=path)
+
+if __name__ == '__main__':
     app.secret_key = 'super secret key'
     app.config['SESSION_TYPE'] = 'filesystem'
     app.run()

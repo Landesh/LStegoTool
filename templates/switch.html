@@ -2,139 +2,65 @@
 
 {% block body %}
         <div class="main">
+        <script>
+            function Switch(filter) {
+              var path = '../static/images/' + filter + '{{img}}';
+              document.getElementById("img").src = path;
+            }
+            function BitSwitch(filter) {
+              var bit = document.getElementById("bit").value;
+              var path = '../static/images/' + bit + filter + '{{img}}';
+              document.getElementById("img").src = path;
+            }
+        </script>
         <div class="row">
-          <img src="{{img}}" alt="{{img}}" height = 100% width= 100% padding-bottom = 10px>
-        </div>
-
-        <div class="row">
-          <form method="post">
-            <p align="center" class="methodtitle">Filters</p>
-            <hr>
-
-            <div class="block" align="left">
-              <ul>
-              <li>
-                <input type="radio" id="Negative" name="method" value="Negative">
-                <label for="Negative">Negative</label>
-              </li>
-
-              <li>
-                <input type="radio" id="OnlyRed"name="method" value="OnlyRed">
-                <label for="OnlyRed">OnlyRed</label>
-              </li>
-
-              <li>
-                <input type="radio" id="OnlyGreen"name="method" value="OnlyGreen">
-                <label for="OnlyGreen">OnlyGreen</label>
-              </li>
-
-              <li>
-                <input type="radio" id="OnlyBlue" name="method" value="OnlyBlue">
-                <label for="OnlyBlue">OnlyBlue</label>
-              </li>
-              </ul>
-            </div>
-
-            <div class="block" align="left" >
-            <ul>
-            <li>
-              <input type="radio" id="RedBitPlane" name="method" value="RedBitPlane">
-              <label for="RedBitPlane">RedBitPlane</label>
-            </li>
-
-            <li>
-              <input type="radio" id="GreenBitPlane" name="method" value="GreenBitPlane">
-              <label for="GreenBitPlane">GreenBitPlane</label>
-            </li>
-              <input type="radio" id="BlueBitPlane" name="method" value="BlueBitPlane">
-              <label for="BlueBitPlane">BlueBitPlane</label>
-
-            <li>
-              <input type="radio" id="AlphaBitPlane" name="method" value="AlphaBitPlane">
-              <label for="AlphaBitPlane">AlphaBitPlane</label>
-            </li>
-
-            <li>
-              <input type="text" placeholder="0 - 7" name="bit">
-            </li>
-            </ul>
-            </div>
-
-            <div class="block">
-              <input type="submit" name="switch">
-            </div>
-          </form>
+          <img src="../static/images/{{img}}" alt="{{img}}" id="img" height = 100% width= 100% padding-bottom = 10px>
+          <div class="rowfe">
+          {% for filter in filters %}
+              <button class="switchbuttons" onclick="Switch('{{filter}}')">{{filter}}</button>
+          {% endfor %}
+          </div>
+          <div class="rowfe">
+          {% for filter in bitfilters %}
+              <button class="switchbuttons" onclick="BitSwitch('{{filter}}')">{{filter}}</button>
+          {% endfor %}
+          <input class="switchbuttons" type="text" placeholder="0 - 7" name="bit" id="bit" value="0">
+          </div>
         </div>
 
         <div class="row">
               <form method="post">
-                <input value="SignificantBit" type="hidden" name="method">
-
                 <p align="center" class="methodtitle">Significant Bit Method</p>
                 <hr>
 
                 <div class="block13" align="left">
                   <ul>
-                  <li>
-                    <input type="radio" value="RGB" name="color" checked>RGB
-                  </li>
-
-                  <li>
-                    <input type="radio" value="RBG" name="color">RBG
-                  </li>
-
-                  <li>
-                    <input type="radio" value="GRB" name="color">GRB
-                  </li>
-
-                  <li>
-                    <input type="radio" value="GBR" name="color">GBR
-                  </li>
-
-                  <li>
-                    <input type="radio" value="BRG" name="color">BRG
-                  </li>
-
-                  <li>
-                    <input type="radio" value="BGR" name="color">BGR
-                  </li>
+                  <li><input type="radio" value="RGB" name="color" checked>RGB</li>
+                  <li><input type="radio" value="RBG" name="color">RBG</li>
+                  <li><input type="radio" value="GRB" name="color">GRB</li>
+                  <li><input type="radio" value="GBR" name="color">GBR</li>
+                  <li><input type="radio" value="BRG" name="color">BRG</li>
+                  <li><input type="radio" value="BGR" name="color">BGR</li>
                   </ul>
                 </div>
 
                 <div class="block13" align="left">
                   <ul>
-                  <li>
-                    <input type="radio" value="True" name="row_order" checked>First Rows?
-                  </li>
-
-                  <li>
-                    <input type="radio" value="False"name="row_order">First Columns?
-                  </li>
+                  <li><input type="radio" value="True" name="row_order" checked>First Rows?</li>
+                  <li><input type="radio" value="False"name="row_order">First Columns?</li>
                   </ul>
                 
                   <ul>
-                  <li>
-                    <input type="radio" value="0" name="startpoint" checked>Left Up
-                  </li>
-
-                  <li>
-                    <input type="radio" value="1" name="startpoint">Right Up
-                  </li>
-
-                  <li>
-                    <input type="radio" value="2" name="startpoint">Left Down
-                  </li>
-
-                  <li>
-                    <input type="radio" value="3" name="startpoint">Right Up
-                  </li>
+                  <li><input type="radio" value="0" name="startpoint" checked>Left Up</li>
+                  <li><input type="radio" value="1" name="startpoint">Right Up</li>
+                  <li><input type="radio" value="2" name="startpoint">Left Down</li>
+                  <li><input type="radio" value="3" name="startpoint">Right Up</li>
                   </ul>
                 </div>
 
                 <div class="block13" align="left">
                   <input type="text" name="bit" value="0"> 
                   <input type="submit" name="switch">
-                  <a href="/../static/result.txt" download>Файл</a>
                 </div>
               </form>
         </div>
