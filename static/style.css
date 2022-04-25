@@ -20,12 +20,13 @@ body {
     height: 15%;
   }
   li {
-    list-style-type: none
+    list-style-type: none;
   }
   ul {
     margin: 0;
     margin-bottom: 5px;
     padding: 0;
+    width: auto;
   }
   hr {
     margin: 0;
@@ -92,6 +93,9 @@ body {
     max-height: 1024px;
     padding: 15px;
   }
+  .blockfull {
+    width: 100%
+  }
   .block {
     width: 50%;
     float: left;
@@ -156,6 +160,6 @@ body {
     padding: 5px;
   }
   .switchbuttons {
-    width: 15%;
+    width: auto;
     margin: auto;
   }
